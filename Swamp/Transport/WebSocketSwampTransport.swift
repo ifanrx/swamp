@@ -10,6 +10,39 @@ import Foundation
 import Starscream
 
 open class WebSocketSwampTransport: SwampTransport, WebSocketDelegate {
+    public func didReceive(event: WebSocketEvent, client: WebSocket) {
+        switch event {
+            case .connected(let headers):
+                print("websocket is connected: \(headers)")
+                delegate?.swampTransportDidConnectWithSerializer(JSONSwampSerializer())
+            case .disconnected(let reason, let code):
+                print("websocket is disconnected: \(reason) with code: \(code)")
+                delegate?.swampTransportDidDisconnect(nil, reason: reason)
+            case .text(let string):
+                print("Received text: \(string)")
+                if let data = string.data(using: String.Encoding.utf8) {
+                    self.websocketDidReceiveData(socket: socket, data: data)
+                }
+            case .binary(let data):
+                print("Received data: \(data.count)")
+                delegate?.swampTransportReceivedData(data)
+            case .ping(_):
+                break
+            case .pong(_):
+                break
+            case .viabilityChanged(_):
+                break
+            case .reconnectSuggested(_):
+                break
+            case .cancelled:
+                break
+            case .error(let error):
+                if let error = error {
+                    delegate?.swampTransportDidDisconnect(error as NSError, reason: nil)
+                }
+            }
+    }
+    
     
     enum WebsocketMode {
         case binary, text
@@ -22,7 +55,9 @@ open class WebSocketSwampTransport: SwampTransport, WebSocketDelegate {
     fileprivate var disconnectionReason: String?
     
     public init(wsEndpoint: URL){
-        self.socket = WebSocket(url: wsEndpoint, protocols: ["wamp.2.json"])
+        var request = URLRequest(url: wsEndpoint)
+        request.addValue("wamp.2.json", forHTTPHeaderField: "Sec-WebSocket-Protocol")
+        self.socket = WebSocket(request: request)
         self.mode = .text
         socket.delegate = self
     }

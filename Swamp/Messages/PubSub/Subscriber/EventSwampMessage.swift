@@ -12,13 +12,13 @@ import Foundation
 class EventSwampMessage: SwampMessage {
     
     let subscription: Int
-    let publication: Int
+    let publication: Int?
     let details: [String: AnyObject]
     
     let args: [AnyObject]?
     let kwargs: [String: AnyObject]?
     
-    init(subscription: Int, publication: Int, details: [String: AnyObject], args: [AnyObject]?=nil, kwargs: [String: AnyObject]?=nil) {
+    init(subscription: Int, publication: Int?, details: [String: AnyObject], args: [AnyObject]?=nil, kwargs: [String: AnyObject]?=nil) {
         self.subscription = subscription
         self.publication = publication
         self.details = details
@@ -31,14 +31,14 @@ class EventSwampMessage: SwampMessage {
     
     required init(payload: [Any]) {
         self.subscription = payload[0] as! Int
-        self.publication = payload[1] as! Int
+        self.publication = payload[1] as? Int
         self.details = payload[2] as! [String: AnyObject]
         self.args = payload[safe: 3] as? [AnyObject]
         self.kwargs = payload[safe: 4] as? [String: AnyObject]
     }
     
     func marshal() -> [Any] {
-        var marshalled: [Any] = [SwampMessages.event.rawValue, self.subscription, self.publication, self.details]
+        var marshalled: [Any] = [SwampMessages.event.rawValue, self.subscription, self.publication ?? NSNull(), self.details]
         
         if let args = self.args {
             marshalled.append(args)
